@@ -32,7 +32,7 @@
             max-width: 900px;
             margin: 40px auto;
             padding: 20px;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.85);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             position: relative;
@@ -150,27 +150,43 @@
     resizeCanvas();
 
     // Particle properties
-    let x = canvas.width / 2;
-    let y = canvas.height / 2;
-    const radius = 5;
+    const numParticles = 30;
+    const particles = [];
+
+    for (let i = 0; i < numParticles; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 4 + 2,
+            color: `rgba(0, 122, 204, ${Math.random() * 0.8 + 0.2})`
+        });
+    }
 
     function brownianMotion() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Create a fading effect
+        ctx.fillStyle = "rgba(240, 240, 249, 0.1)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw particle
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = "#007acc";
-        ctx.fill();
+        particles.forEach(p => {
+            // Draw particle
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = p.color;
+            ctx.fill();
 
-        // Random walk step
-        const stepSize = 2;
-        x += (Math.random() - 0.5) * stepSize * 2;
-        y += (Math.random() - 0.5) * stepSize * 2;
+            // Random walk step
+            const stepSize = 2;
+            p.x += (Math.random() - 0.5) * stepSize * 5;
+            p.y += (Math.random() - 0.5) * stepSize * 5;
 
-        // Keep the particle within bounds
-        x = Math.max(radius, Math.min(canvas.width - radius, x));
-        y = Math.max(radius, Math.min(canvas.height - radius, y));
+            // Keep the particle within bounds
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+        });
 
         requestAnimationFrame(brownianMotion);
     }
