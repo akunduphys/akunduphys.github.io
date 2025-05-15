@@ -138,7 +138,7 @@
 </footer>
 
 <script>
-    const canvas = document.getElementById("brownianCanvas");
+    const canvas = document.getElementById("picassoCanvas");
     const ctx = canvas.getContext("2d");
 
     // Resize canvas
@@ -149,49 +149,149 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    // Particle properties
-    const numParticles = 30;
-    const particles = [];
+    // Picasso-style elements
+    const numElements = 9; // Odd numbers create more dynamic compositions
+    const elements = [];
 
-    for (let i = 0; i < numParticles; i++) {
-        particles.push({
+    // Picasso color palette: blues, ochres, whites, blacks
+    const picassoColors = [
+        '#0D2B52', '#1D4585', '#3A6EA5', // Blues
+        '#C79B00', '#E8C547', // Ochres
+        '#FFFFFF', '#E8E8E8', // Whites
+        '#1A1A1A', '#3D3D3D'  // Blacks
+    ];
+
+    for (let i = 0; i < numElements; i++) {
+        elements.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            radius: Math.random() * 4 + 2,
-            color: `rgba(0, 122, 204, ${Math.random() * 0.8 + 0.2})`
+            size: Math.random() * 50 + 30,
+            rotation: Math.random() * 360,
+            color: picassoColors[Math.floor(Math.random() * picassoColors.length)],
+            type: Math.floor(Math.random() * 3), // 0=face, 1=body, 2=abstract shape
+            features: {
+                eyeOffset: Math.random() * 0.4 - 0.2,
+                mouthAngle: Math.random() * 60 - 30
+            }
         });
     }
 
-    function brownianMotion() {
-        // Create a fading effect
-        ctx.fillStyle = "rgba(240, 240, 249, 0.1)";
+    function picassoMotion() {
+        // Background - light canvas like my paintings
+        ctx.fillStyle = "#F5F0E6";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        particles.forEach(p => {
-            // Draw particle
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = p.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = p.color;
-            ctx.fill();
+        elements.forEach(el => {
+            ctx.save();
+            ctx.translate(el.x, el.y);
+            ctx.rotate(el.rotation * Math.PI / 180);
+            
+            // Draw different Picasso-style elements
+            switch(el.type) {
+                case 0: // Face
+                    drawPicassoFace(ctx, el.size, el.color, el.features);
+                    break;
+                case 1: // Body
+                    drawAbstractBody(ctx, el.size, el.color);
+                    break;
+                case 2: // Abstract shape
+                    drawGeometricShape(ctx, el.size, el.color);
+                    break;
+            }
+            
+            ctx.restore();
 
-            // Random walk step
-            const stepSize = 2;
-            p.x += (Math.random() - 0.5) * stepSize * 5;
-            p.y += (Math.random() - 0.5) * stepSize * 5;
+            // Movement - more dramatic than random walk
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 8;
+            el.x += Math.cos(angle) * distance;
+            el.y += Math.sin(angle) * distance;
+            el.rotation += (Math.random() - 0.5) * 3;
 
-            // Keep the particle within bounds
-            if (p.x < 0) p.x = canvas.width;
-            if (p.x > canvas.width) p.x = 0;
-            if (p.y < 0) p.y = canvas.height;
-            if (p.y > canvas.height) p.y = 0;
+            // Bounce off edges
+            if (el.x < 0 || el.x > canvas.width) el.x = Math.max(0, Math.min(canvas.width, el.x));
+            if (el.y < 0 || el.y > canvas.height) el.y = Math.max(0, Math.min(canvas.height, el.y));
         });
 
-        requestAnimationFrame(brownianMotion);
+        requestAnimationFrame(picassoMotion);
     }
 
-    brownianMotion();
+    function drawPicassoFace(ctx, size, color, features) {
+        // Head shape - abstract and angular
+        ctx.beginPath();
+        ctx.moveTo(0, -size/2);
+        ctx.lineTo(size/3, -size/4);
+        ctx.lineTo(size/2, size/4);
+        ctx.lineTo(0, size/2);
+        ctx.lineTo(-size/2, size/4);
+        ctx.lineTo(-size/3, -size/4);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "#1A1A1A";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Eyes - often asymmetrical in my work
+        const eyeSize = size/8;
+        ctx.fillStyle = "#FFFFFF";
+        
+        // Left eye
+        ctx.beginPath();
+        ctx.ellipse(-size/4 + features.eyeOffset*size, -size/8, 
+                    eyeSize, eyeSize*1.2, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Right eye (different shape)
+        ctx.beginPath();
+        ctx.ellipse(size/4 + features.eyeOffset*size, -size/8, 
+                    eyeSize*0.8, eyeSize, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Mouth - exaggerated expression
+        ctx.beginPath();
+        ctx.arc(0, size/5, size/6, 
+                (180 + features.mouthAngle) * Math.PI/180, 
+                (360 - features.mouthAngle) * Math.PI/180);
+        ctx.stroke();
+    }
+
+    function drawAbstractBody(ctx, size, color) {
+        // Angular, distorted body like in my paintings
+        ctx.beginPath();
+        ctx.moveTo(0, -size/2);
+        ctx.lineTo(size/2, -size/4);
+        ctx.lineTo(size/3, size/2);
+        ctx.lineTo(-size/3, size/2);
+        ctx.lineTo(-size/2, -size/4);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "#1A1A1A";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawGeometricShape(ctx, size, color) {
+        // Cubist geometric shapes
+        const sides = Math.floor(Math.random() * 3) + 3; // 3-5 sides
+        ctx.beginPath();
+        for (let i = 0; i < sides; i++) {
+            const angle = (i / sides) * Math.PI * 2;
+            const radius = size * (0.7 + Math.random() * 0.3);
+            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "#1A1A1A";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    picassoMotion();
 </script>
 
 </body>
