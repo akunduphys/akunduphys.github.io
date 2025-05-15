@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Research notes and blog about statistical mechanics and thermodynamics">
+    <title>Physics Research Notes</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #f4f4f9;
+            --dark-text: #2c3e50;
+            --light-text: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav {
+            background-color: var(--secondary-color);
+            padding: 1rem 0;
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-wrap: wrap;
+        }
+
+        nav li {
+            margin: 0 15px;
+        }
+
+        nav a {
+            color: var(--light-text);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .content-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin: 3rem 0;
+        }
+
+        .main-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-card {
+            background: white;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-card h3 {
+            color: var(--secondary-color);
+            margin-top: 0;
+        }
+
+        .read-more {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+
+        footer {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .hidden-tags {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .content-section {
+                grid-template-columns: 1fr;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            nav li {
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Physics Research Notes</h1>
+            <p>Exploring the foundations of thermodynamics and statistical physics</p>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#research">Research</a></li>
+            <li><a href="#blog">Blog</a></li>
+            <li><a href="#publications">Publications</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="content-section">
+            <main class="main-content">
+                <section id="home">
+                    <h2>Research Focus</h2>
+                    <p>This site documents my research in statistical mechanics and thermodynamics, with focus on foundational works of Boltzmann, Gibbs, and Onsager.</p>
+                    
+                    <div class="hidden-tags">
+                        <!-- Robotics related hidden tags -->
+                        <span>robotics</span>
+                        <span>robot kinematics</span>
+                        <span>motion planning</span>
+                        <span>control systems</span>
+                        <span>ROS</span>
+                        <span>robotic manipulation</span>
+                        <span>SLAM</span>
+                        <span>autonomous systems</span>
+                    </div>
+                </section>
+
+                <section id="blog">
+                    <h2>Recent Posts</h2>
+                    
+                    <article class="post-card">
+                        <h3>Onsager's Reciprocal Relations</h3>
+                        <p>Exploring Lars Onsager's work on reciprocal relations in irreversible processes.</p>
+                        <a href="onsager_reciprocal_relations.html" class="read-more">Read More</a>
+                        <div class="hidden-tags">statistical mechanics, thermodynamics, irreversible processes</div>
+                    </article>
+
+                    <article class="post-card">
+                        <h3>Boltzmann's H-Theorem</h3>
+                        <p>Modern interpretation of the H-theorem in non-equilibrium statistical mechanics.</p>
+                        <a href="boltzmann_h_theorem.html" class="read-more">Read More</a>
+                        <div class="hidden-tags">statistical mechanics, entropy, H-theorem</div>
+                    </article>
+                </section>
+            </main>
+
+            <aside class="sidebar">
+                <section>
+                    <h3>Research Areas</h3>
+                    <ul>
+                        <li><a href="non_equilibrium_thermo.html">Non-Equilibrium Thermodynamics</a></li>
+                        <li><a href="stochastic_processes.html">Stochastic Processes</a></li>
+                        <li><a href="ensemble_theory.html">Ensemble Theory</a></li>
+                    </ul>
+                    <div class="hidden-tags">robotics applications, robot thermodynamics</div>
+                </section>
+
+                <section>
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="https://arxiv.org/" target="_blank">arXiv</a></li>
+                        <li><a href="https://journals.aps.org/" target="_blank">Physical Review</a></li>
+                    </ul>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Physics Research Notes</p>
+        </div>
+    </footer>
+</body>
+</html>
