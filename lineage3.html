@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Academic Lineage Dynamic Network (Fit to Screen)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body { font-family: sans-serif; margin: 0; overflow: hidden; background-color: #f0f0f0; }
+  #graph-container {
+    position: absolute; /* Changed to absolute for full control */
+    top: 60px; /* Space for the heading */
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  svg {
+    display: block; /* Helps prevent extra space */
+    width: 100%;
+    height: 100%;
+  }
+  .node circle {
+    stroke: #333;
+    stroke-width: 1.5px;
+    cursor: grab;
+  }
+  .node text {
+    font-size: 10px;
+    pointer-events: none;
+    text-anchor: middle;
+    fill: #333;
+    user-select: none;
+  }
+  .link {
+    stroke: #999;
+    stroke-opacity: 0.6;
+    stroke-width: 2px;
+  }
+  .tooltip {
+    position: absolute;
+    text-align: left;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    font-size: 12px;
+    color: #333;
+    line-height: 1.4;
+    max-width: 300px;
+    z-index: 10; /* Ensure tooltip is on top */
+  }
+  .tooltip strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+
+<h1 style="text-align: center; margin: 15px 0; color: #333;">Academic Lineage of Aritra Kundu</h1>
+<div id="graph-container"></div>
+<div class="tooltip"></div> <script>
+const container = document.getElementById('graph-container');
+let width = container.clientWidth;
+let height = container.clientHeight;
+
+const svg = d3.select("#graph-container").append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`) // Use viewBox for scaling
+    .attr("preserveAspectRatio", "xMidYMid meet"); // Maintain aspect ratio
+
+const tooltip = d3.select(".tooltip"); // Select the tooltip div
+
+const nodesData = [
+    { id: "Aritra Kundu", name: "Aritra Kundu", year: "~2024", degree: "PhD Physics", institution: "ICTS-TIFR", thesis: "Statistical Physics of Active Matter / Non-equilibrium Systems (Representative title)" },
+    { id: "Abhishek Dhar", name: "Abhishek Dhar", year: "1998", degree: "PhD Physics", institution: "IISc Bangalore", thesis: "Dynamics of interfaces and vortex lines" },
+    { id: "Deepak Dhar", name: "Deepak Dhar", year: "1978", degree: "PhD Physics", institution: "Caltech", thesis: "Research in statistical physics/condensed matter theory" },
+    { id: "Jon Mathews", name: "Jon Mathews", year: "1956", degree: "PhD Physics", institution: "Caltech", thesis: "Application of Dispersion Relations to Proton Compton Scattering" },
+    { id: "Murray Gell-Mann", name: "Murray Gell-Mann", year: "1951", degree: "PhD Physics", institution: "MIT", thesis: "Coupling Strength and Nuclear Reactions" },
+    { id: "Victor Weisskopf", name: "Victor Weisskopf", year: "1931", degree: "PhD Physics", institution: "Göttingen", thesis: "Zur Theorie der Resonanzfluoreszenz (On the Theory of Resonance Fluorescence)" },
+    { id: "Max Born", name: "Max Born", year: "1907", degree: "PhD Mathematics", institution: "Göttingen", thesis: "Untersuchungen über die Stabilität der elastischen Linie in Ebene und Raum... (Investigations on the Stability of the Elastic Line...)" },
+    { id: "Carl Runge", name: "Carl Runge", year: "1880", degree: "PhD Mathematics", institution: "Berlin", thesis: "Über die Krümmung, Torsion und geodätische Krümmung... (On the Curvature, Torsion and Geodesic Curvature...)" },
+    { id: "Karl Weierstrass", name: "Karl Weierstrass", year: "1854", degree: "Honorary PhD", institution: "Königsberg", thesis: "No dissertation (Honorary degree)" },
+    { id: "Christoph Gudermann", name: "Christoph Gudermann", year: "1832", degree: "Honorary PhD", institution: "Berlin", thesis: "No standard PhD dissertation" },
+    { id: "Carl Friedrich Gauss", name: "Carl Friedrich Gauss", year: "1799", degree: "PhD Philosophy", institution: "Helmstedt", thesis: "Demonstratio nova theorematis omnem functionem algebraicam rationalem integram... (A new proof...)" },
+    { id: "Johann Friedrich Pfaff", name: "Johann Friedrich Pfaff", year: "1786", degree: "PhD", institution: "Göttingen", thesis: "Commentatio de ortibus et occasibus siderum... (Commentary on the rising and setting of the stars...)" },
+    { id: "Abraham G. Kästner", name: "Abraham Gotthelf Kästner", year: "1739", degree: "Habilitation", institution: "Leipzig", thesis: "Theoria radicum in aequationibus (Theory of roots in equations)" },
+    { id: "Christian A. Hausen", name: "Christian August Hausen", year: "1713", degree: "PhD", institution: "Wittenberg", thesis: "De corpore scissuris figurisque non cruetando ductu" },
+    { id: "Johann C. Wichmannshausen", name: "Johann Christoph Wichmannshausen", year: "1685", degree: "MA", institution: "Leipzig", thesis: "Disputationem Moralem De Divortiis Secundum Jus Naturae (Moral Disputation on Divorce...)" },
+    { id: "Otto Mencke", name: "Otto Mencke", year: "1666", degree: "PhD", institution: "Leipzig", thesis: "Ex Theologia naturali — De Absoluta Dei Simplicitate..." },
+    { id: "Jakob Thomasius", name: "Jakob Thomasius", year: "1643", degree: "MA Philosophy", institution: "Leipzig", thesis: "MA was often terminal; specific dissertation title not readily available" },
+    { id: "Friedrich Leibniz", name: "Friedrich Leibniz", year: "Professor", degree: "", institution: "", thesis: "Professor, father of G.W. Leibniz" }
+];
+
+const linksData = [
+    { source: "Aritra Kundu", target: "Abhishek Dhar" },
+    { source: "Abhishek Dhar", target: "Deepak Dhar" },
+    { source: "Deepak Dhar", target: "Jon Mathews" },
+    { source: "Jon Mathews", target: "Murray Gell-Mann" },
+    { source: "Murray Gell-Mann", target: "Victor Weisskopf" },
+    { source: "Victor Weisskopf", target: "Max Born" },
+    { source: "Max Born", target: "Carl Runge" },
+    { source: "Carl Runge", target: "Karl Weierstrass" },
+    { source: "Karl Weierstrass", target: "Christoph Gudermann" },
+    { source: "Christoph Gudermann", target: "Carl Friedrich Gauss" },
+    { source: "Carl Friedrich Gauss", target: "Johann Friedrich Pfaff" },
+    { source: "Johann Friedrich Pfaff", target: "Abraham G. Kästner" },
+    { source: "Abraham G. Kästner", target: "Christian A. Hausen" },
+    { source: "Christian A. Hausen", target: "Johann C. Wichmannshausen" },
+    { source: "Johann C. Wichmannshausen", target: "Otto Mencke" },
+    { source: "Otto Mencke", target: "Jakob Thomasius" },
+    { source: "Jakob Thomasius", target: "Friedrich Leibniz" }
+];
+
+// Group links for simulation
+const simulationLinks = linksData.map(d => Object.create(d));
+
+const simulation = d3.forceSimulation(nodesData)
+    .force("link", d3.forceLink(simulationLinks).id(d => d.id).distance(80).strength(0.5)) // Adjusted distance/strength
+    .force("charge", d3.forceManyBody().strength(-150)) // Adjusted charge strength
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collide", d3.forceCollide().radius(25)) // Add collision force
+    .on("tick", ticked);
+
+const link = svg.append("g")
+    .attr("class", "links")
+  .selectAll("line")
+  .data(simulationLinks) // Use simulationLinks here
+  .enter().append("line")
+    .attr("class", "link");
+
+const node = svg.append("g")
+    .attr("class", "nodes")
+  .selectAll("g")
+  .data(nodesData)
+  .enter().append("g")
+    .attr("class", "node")
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+node.append("circle")
+    .attr("r", 12) // Slightly smaller radius
+    .attr("fill", "#69b3a2")
+    .on("click", (event, d) => {
+        event.stopPropagation(); // Prevent triggering other events if needed
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(d.name + ' ' + d.degree + ' ' + d.institution)}`, '_blank');
+    })
+    .on("mouseover", (event, d) => {
+        tooltip.html(`
+            <strong>${d.name}</strong><br>
+            ${d.degree} (${d.year}) from ${d.institution || 'N/A'}<br>
+            Thesis: ${d.thesis || 'N/A'}
+        `)
+        .style("opacity", 1);
+    })
+    .on("mousemove", (event) => { // Update position continuously
+         tooltip.style("left", (event.pageX + 15) + "px")
+               .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+    });
+
+node.append("text")
+    .attr("dy", 4)
+    .text(d => d.name);
+
+function ticked() {
+  link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+  node
+      .attr("transform", d => `translate(${d.x},${d.y})`);
+}
+
+function dragstarted(event, d) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+  d3.select(this).select("circle").style("cursor", "grabbing"); // Change cursor
+}
+
+function dragged(event, d) {
+  d.fx = event.x;
+  d.fy = event.y;
+}
+
+function dragended(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null; // Let the simulation position the node again unless you want it fixed
+  d.fy = null;
+  d3.select(this).select("circle").style("cursor", "grab"); // Restore cursor
+}
+
+// Update dimensions and simulation on window resize
+window.addEventListener('resize', () => {
+    width = container.clientWidth;
+    height = container.clientHeight;
+    svg.attr("viewBox", `0 0 ${width} ${height}`); // Update viewBox
+    simulation.force("center", d3.forceCenter(width / 2, height / 2));
+    simulation.alpha(0.3).restart(); // Reheat simulation to adjust
+});
+</script>
+
+</body>
+</html>
