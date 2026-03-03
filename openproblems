@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Problems in Mathematical Physics</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        #graph-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .hull {
+            fill-opacity: 0.15;
+            stroke-opacity: 0.4;
+            stroke-width: 65px;
+            stroke-linejoin: round;
+        }
+
+        .node circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
+            cursor: pointer;
+            transition: stroke-width 0.2s;
+        }
+        .node circle:hover {
+            stroke-width: 4px;
+        }
+        .node text {
+            font-size: 11px;
+            fill: #e0e0e0;
+            pointer-events: none;
+            text-shadow: 1px 1px 3px #000, -1px -1px 3px #000;
+        }
+        .link {
+            stroke: #666;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+            stroke-dasharray: 4;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 15px;
+            width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+        #tooltip h3 { margin: 0 0 5px 0; font-size: 16px; color: #4da6ff; }
+        #tooltip .author { font-size: 12px; color: #aaaaaa; margin-bottom: 10px; font-style: italic; }
+        #tooltip .desc { font-size: 13px; line-height: 1.5; color: #dddddd; }
+        
+        #legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            z-index: 5;
+        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="legend">
+        <h3 style="margin-top: 0; font-size: 14px;">Physics Domains</h3>
+        <div class="legend-item"><div class="legend-color" style="background: #1f77b4;"></div>Non-Equilibrium & Transport</div>
+        <div class="legend-item"><div class="legend-color" style="background: #2ca02c;"></div>Dynamical Systems</div>
+        <div class="legend-item"><div class="legend-color" style="background: #ff7f0e;"></div>Phase Transitions</div>
+        <div class="legend-item"><div class="legend-color" style="background: #d62728;"></div>Quantum Foundations</div>
+        <div class="legend-item"><div class="legend-color" style="background: #9467bd;"></div>General Relativity</div>
+    </div>
+
+    <div id="tooltip">
+        <h3 id="tt-title"></h3>
+        <div class="author" id="tt-author"></div>
+        <div class="desc" id="tt-desc"></div>
+    </div>
+
+    <div id="graph-container"></div>
+
+    <script>
+        // Obfuscated JSON data string
+        const encodedData = `{"abqrf":[{"vq":"A1","ynory":"Havirefny ARFF Rafrzoyr","nhgube":"Qvzvgev Xhfarmbi","tebhc":1,"qrfpevcgvba":"Pna jr qrsvar n aba-rdhvyvoevhz rafrzoyr naq hfr gung gb pbzchgr cebcregvrf bs gur flfgrz? Gur pheerag haqrefgnaqvat bs aba-rdhvyvoevhz culfvpf vf ynetryl yvzvgrq gb rkcnafvbaf nebhaq rdhvyvoevhz."},{"vq":"A2","ynory":"Ragebcl Qviretrapr va ARFF","nhgube":"Qvzvgev Xhfarmbi","tebhc":1,"qrfpevcgvba":"Va gur aba-rdhvyvoevhz fgrnql fgngr, vg frrzf gung ragebcl vf abg qrsvarq, rira va gur jrnx svryq yvzvg. Vgf inyhr qviretrf. Vf gurer n pbafvfgrag qrsvavgvba jr pna hfr urer?"},{"vq":"A3","ynory":"Oernxqnja bs Terra-Xhob","nhgube":"Qvzvgev Xhfarmbi","tebhc":1,"qrfpevcgvba":"Gurer pna or ynetr qrcnehgerf sebz Terra-Xhob cerqvpgvbaf va aba-rdhvyvoevhz frggvatf. Na ragveryl arj nccebnpu frrzf arrqrq."},{"vq":"A4","ynory":"Sbhevre'f Urng Ynj","nhgube":"Oneel Fvzba","tebhc":1,"qrfpevcgvba":"Svaq n zrpunavpny zbqry va juvpu n flfgrz bs fvmr Y unf n grzcrengher qvssrerapr qrygn G orgjrra vgf raqf naq va juvpu gur engr bs urng genafsre va gur vasvavgr Y yvzvg tbrf nf Y^(-1)."},{"vq":"A21","ynory":"Punbf & Genafcbeg","nhgube":"Qvzvgev Xhfarmbi","tebhc":1,"qrfpevcgvba":"Jung fcrpvsvp ebyr qbrf gur punbgvp angher bs haqreylvat Unzvygbavna qlanzvpf cynl va znpebfpbcvp genafcbeg?"},{"vq":"A22","ynory":"Senpgny Cunfr Fcnpr","nhgube":"Qvzvgev Xhfarmbi","tebhc":1,"qrfpevcgvba":"Haqrefgnaqvat jul naq ubj cunfr fcnpr qvfgevohgvbaf pna orpbzr senpgny va aba-rdhvyvoevhz pbaqvgvbaf."},{"vq":"A35","ynory":"Aba-Ulcreobyvpvgl bs Urng Genafcbeg","nhgube":"Qnivq Ehryyr","tebhc":1,"qrfpevcgvba":"Gur zvpebfpbcvp qlanzvpf bs genafcbeg curabzran (va cnegvphyne urng genafcbeg) vf arprffnevyl aba ulcreobyvp (r.t., n cebqhpg bs Nabfbi qlanzvpny flfgrzf), znxvat rknpg cregheongvba gurbel qvssvphyg."},{"vq":"A36","ynory":"Yvsr nf n ARFF","nhgube":"Qnivq Ehryyr","tebhc":1,"qrfpevcgvba":"N fybjyl ribyivat abardhvyvoevhz fgngr pbagnvaf yvsr vs, hfvat n fbhepr bs artragebcl ng gur ngbzvp yriry, vg fgrnqvyl znvagnvaf qvffvchgvir fgehpgherf pbagnvavat n ynetr nzbhag bs vasbezngvba."},{"vq":"A5","ynory":"Punbf va Vasvavgr-Q","nhgube":"Ynv-Fnat Lbhat","tebhc":2,"qrfpevcgvba":"Gur perngvba, qrgrpgvba naq pnyvoengvba bs punbf va uvtu be vasvavgr qvzrafvbany flfgrzf. Rkvfgvat vqrnf sebz svavgr qvzrafvbany ulcreobyvp gurbel zhfg or rkgraqrq."},{"vq":"A6","ynory":"Fgbpunfgvp/Abvfl Qlanzvpf","nhgube":"Ynv-Fnat Lbhat","tebhc":2,"qrfpevcgvba":"Haqrefgnaqvat 'abvfl' flfgrzf juvpu ner cebprffrf tbirearq ol ehyrf jvgu obgu fgebat qrgrezvavfgvp pbzcbaragf naq fgbpunfgvp abvfr."},{"vq":"A7","ynory":"Retbqvpvgl & Rdhvyvoevhz","nhgube":"Oneel Fvzba","tebhc":2,"qrfpevcgvba":"Irevsl gur fpranevb bs bar retbqvp pbzcbarag bpphclvat n ynetre senpgvba va gur vasvavgr ibyhzr yvzvg gb whfgvsl gur nccebnpu gb rdhvyvoevhz."},{"vq":"A8","ynory":"Gheohyrapr & Raretl Sybj","nhgube":"Fvanv / Fvzba","tebhc":2,"qrfpevcgvba":"Qrirybc n pbzcerurafvir gurbel bs gur ybat gvzr orunivbe bs qlanzvpny flfgrzf vapyhqvat n gurbel bs gur bafrg bs, naq bs shlyl qrirybcrq gheohyrapr."},{"vq":"A12","ynory":"Frcnengevk Fcyvggvat","nhgube":"T. Tnlynibggv","tebhc":2,"qrfpevcgvba":"Gur qrtrarenpl bs gur craqhyhz frcnengevk vf erzbirq va dhnfv-crevbqvpnyyl sbeprq craqhyhzf. Qbrf gur fcyvggvat genafvgvba unir havirefnyvgl srngherf?"},{"vq":"A19","ynory":"Arjgbanva Fvathynevgvrf","nhgube":"Oneel Fvzba","tebhc":2,"qrfpevcgvba":"Fubj gung gur frg bs vavgvny pbaqvgvbaf yrnqvat gb aba-pbyyvfvbany fvathynevgvrf va gur Arjgbanva A-obql ceboyrz vf aba-rzcgl."},{"vq":"A27","ynory":"Cnyvf Pbawrpgher","nhgube":"Ln. T. Fvanv","tebhc":2,"qrfpevcgvba":"Ner qlanzvpny flfgrzf jvgu bayl n svavgr ahzore bs nggenpgbef qrafr va gur fcnpr bs nyy cbffvoyr qlanzvpny flfgrzf?"},{"vq":"A28","ynory":"XNZ-Vfynaqf Uvrenepul","nhgube":"Ln. T. Fvanv","tebhc":2,"qrfpevcgvba":"Pynffvslvat gur uvrenepuvpny fgehpgher bs XNZ-vfynaqf naq cebivat gur rkvfgrapr bs aba-fzbBgu vairnevnag pheidrf sbe gjvfg zncf."},{"vq":"A29","ynory":"Tbyqra Zrna Ebgngvba","nhgube":"Ln. T. Fvanv","tebhc":2,"qrfpevcgvba":"Rkcynvavat nanylgbpnyyl jul gur ebgngvba ahzore bs gur 'ynfg' vaienvanag pheir va XNZ gurbel vf bsgra gur tbyqra zrna."},{"vq":"A37","ynory":"Gheohyrapr Vagrezvggrapl","nhgube":"Qnivq Ehryyr","tebhc":2,"qrfpevcgvba":"Gur 3Q gheohyrag raretl pnfpnqr pna or nanylmrq sbeznyyl nf n urng sybj. Rkcynvavat vagrezvggrapl erdhverf qvfphffvat n Unzvygbavna flfgrz jvgu 10^4 qrterrf bs serrqbz."},{"vq":"A9","ynory":"Ubzbpvavp Fanxvat","nhgube":"R. Xaboybpu","tebhc":3,"qrfpevcgvba":"Rkcynvavat gur bevtvn bs gur ynetr zhygvcypvgl bs fvzhygnarbhfly fgnoyr fcngvnyyl ybpnyvmrq fgngrf va qvffvchgvir flfgrzf, xabja nf ubzbpvavp fanxvat."},{"vq":"A10","ynory":"ARFF Cunfr Obhaqnevrf","nhgube":"Qvzvgev Xhfarmbi","tebhc":3,"qrfpevcgvba":"Jung unccraf gb cunfr obhaqnevrf va ARFF? Qb cbpxrgf qrirybc qhevat qlanzvp pbbyvat, be vf vg encvq rincbengvba?"},{"vq":"A11","ynory":"Pbagvahhz Cunfr Genafvgvbaf","nhgube":"Oneel Fvzba","tebhc":3,"qrfpevcgvba":"Fubj gung sbe fhvgnoyr pubvprf bs cnve cbgragvnyf, naq sbe vaihref grzcrengher orgn fhssvpvragyl ynetr, gur serr raretl vf aba-P^1 ng fbzr orgn."},{"vq":"A15","ynory":"Rkvfgrapr bs Pelfgnyf","nhgube":"Yvro / Fvzba","tebhc":3,"qrfpevcgvba":"Cebir gung zvavzvmvat pbasvthengvbaf sbe vasvavgr ahyprne znffrf ng mreb grzcrengher pbairetr gb n fgnoyr ynggvpr."},{"vq":"A16","ynory":"Evtbebhf Erabeznyvmngvba","nhgube":"Oneel Fvzba","tebhc":3,"qrfpevcgvba":"Qrirybc n zngurzngvpnyyl cerpvfr irefvba bs gur erabeznyvmngvba genafsbezngvbaf sbe i-qvzrafvbany Vfvnt-glcr flfgrzf gb cebir havirefnyvgl."},{"vq":"A17","ynory":"Frys-Nibvqvat Jnyxf","nhgube":"Oneel Fvzba","tebhc":3,"qrfpevcgvba":"Cebir gung gur pevgvpny rkcbarag sbe frys-nibvqvat enaqbz jnyxf vf rknpgyl 1/2 sbe qvzrafvbaf q >= 4."},{"vq":"A23","ynory":"2Q Ybpnyvmrq Fgehpgherf","nhgube":"R. Xaboybpu","tebhc":3,"qrfpevcgvba":"Haqrefgnaqvat shlyl 2Q ybpnyvmrq fcngvny fgehpgherf va qvffvchgvir flfgrzf, fhpu nf fcbgf, gnetrgf, naq urkntbaf."},{"vq":"A24","ynory":"Fynagrq Fanxvat","nhgube":"R. Xaboybpu","tebhc":3,"qrfpevcgvba":"Haqrefgnaqvat 'fynagrq fanxvat' orunivbe va flfgrzf jvgu pbafreirq dhnagvgvrf, yvxr gur cunfr-svryq pelfgny zbqry."},{"vq":"A25","ynory":"Bevtva bs Sreebznargvfz","nhgube":"Oneel Fvzba","tebhc":3,"qrfpevcgvba":"Irevsl gur Urvfraoret cvpgher bs gur bevtvn bs sreebznargvfz va n ernyvfgvp dhnaghz flfgrz be n fhvgnoyr evtbebhf zbqry."},{"vq":"A26","ynory":"TXF Vardhnyvgvrf","nhgube":"Oneel Fvzba","tebhc":3,"qrfpevcgvba":"Cebir gur TXF vardhnyvgvrf sbe pynffvpny Urvfraoret zbqryf va Q=3 qvzrafvbaf jvgu neovgenel pbheyvat."},{"vq":"A13","ynory":"Vapbafvfgrapl bs DRQ","nhgube":"Fvzba / Yvro","tebhc":4,"qrfpevcgvba":"Cebir gung Dhnaghz Ryrpgebqlanzvpf (DRQ) vf abg n pbafvfgrag zngurzngvpny gurbel qhr gb gur hygenivbyrg ceboyrz."},{"vq":"A14","ynory":"Gurezbdlanvzpf sebz DRQ","nhgube":"Ryyvbgg U. Yvro","tebhc":4,"qrfpevcgvba":"Cebivqr n pbzcyrgryl evtbebhf, aba-cregheongvir qrevingvba bs znpebfpbcvp gurezbdlanvzpf sebz svefg cevapvcyrf va dhnaghz zrpunavpf."},{"vq":"A18","ynory":"Naqrefba Ybpnyvmngvba","nhgube":"Oneel Fvzba","tebhc":4,"qrfpevcgvba":"Cebir gung va 3Q be uvture qvzrafvbaf, sbe fznyy pbheyvat, gurer vf n ertvba jvgu nofbyhgryl pbagvahbhf fcrpgehz (rkgraqrq fgngrf)."},{"vq":"A30","ynory":"i. Arhznaa Ragebcl","nhgube":"Ryyvbgg U. Yvro","tebhc":4,"qrfpevcgvba":"Svaqvat n qrrc culfvpny whfgvsvpngvba sbe gur iba Arhznaa ragebcl sbezhyn bhgfvqr bs fgnaqneq rdhvyvoevhz nffhzcgvbaf."},{"vq":"A31","ynory":"Evtbebhf Pbnefr-Tenvavat","nhgube":"Ryyvbgg U. Yvro","tebhc":4,"qrfpevcgvba":"Ubj gb evtbebhfly vzcyrzrag zngurzngvpny pbnefr-tenvavat va dhnaghz zrpunavpf gb qrevir gur Frpbaq Ynj bs Gurezbdlanvzpf."},{"vq":"A32","ynory":"Nflzcgbgvp Pbzcyrgrarff","nhgube":"Oneel Fvzba","tebhc":4,"qrfpevcgvba":"Cebir nflzcgbgvp pbzcyrgrarff sbe fubeg-enatr A-obql dhnaghz fpnggrevat flfgrzf."},{"vq":"A33","ynory":"Vbavmngvba Zbgbabvpvg","nhgube":"Oneel Fvzba","tebhc":4,"qrfpevcgvba":"Cebir gur zbgbabvpvg bs gur vbavmngvba raretl sbe dhnaghz cbgragvny zbqryf."},{"vq":"A34","ynory":"Cbvag Fcrpgehz","nhgube":"Oneel Fvzba","tebhc":4,"qrfpevcgvba":"Fubj gung fcrpvsvp pbagvahhz nyzbfg crevbqvp zbqryf unir fbzr cbvag fcrpgehz sbe nyzbfg rirel cunfr."},{"vq":"A20","ynory":"Pbfzvp Prafbefuvc","nhgube":"Oneel Fvzba","tebhc":5,"qrfpevcgvba":"Sbezhyngr naq gura cebir be qvfcebir n fhvgnoyr sbez bs pbfzvp prafbefuvc, fubjvat gung 'anxrq fvathynevgvrf' qb abg trarevpnyyl bpphe va trareny eryngvivgl."}],"yvaxf":[{"fbhepr":"A1","gnetrg":"A7"},{"fbhepr":"A3","gnetrg":"A4"},{"fbhepr":"A10","gnetrg":"A11"},{"fbhepr":"A11","gnetrg":"A16"},{"fbhepr":"A16","gnetrg":"A17"},{"fbhepr":"A11","gnetrg":"A15"},{"fbhepr":"A18","gnetrg":"A6"},{"fbhepr":"A19","gnetrg":"A12"},{"fbhepr":"A13","gnetrg":"A14"},{"fbhepr":"A21","gnetrg":"A5"},{"fbhepr":"A7","gnetrg":"A31"},{"fbhepr":"A18","gnetrg":"A34"},{"fbhepr":"A15","gnetrg":"A25"},{"fbhepr":"A1","gnetrg":"A30"},{"fbhepr":"A35","gnetrg":"A4"},{"fbhepr":"A37","gnetrg":"A8"},{"fbhepr":"A36","gnetrg":"A1"}]}`;
+
+        // Decoder for the obfuscated string
+        function decodeData(str) {
+            return str.replace(/[a-zA-Z]/g, function(c) {
+                return String.fromCharCode((c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+            });
+        }
+
+        // Parse the decrypted JSON back into a usable JS object
+        const graph = JSON.parse(decodeData(encodedData));
+
+        const colorScale = d3.scaleOrdinal()
+            .domain([1, 2, 3, 4, 5])
+            .range(["#1f77b4", "#2ca02c", "#ff7f0e", "#d62728", "#9467bd"]);
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const groupCenters = {
+            1: { x: width * 0.20, y: height * 0.25 },
+            2: { x: width * 0.80, y: height * 0.25 },
+            3: { x: width * 0.20, y: height * 0.75 },
+            4: { x: width * 0.80, y: height * 0.75 },
+            5: { x: width * 0.50, y: height * 0.85 }
+        };
+
+        const svg = d3.select("#graph-container").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const tooltip = d3.select("#tooltip");
+
+        const simulation = d3.forceSimulation(graph.nodes)
+            .force("link", d3.forceLink(graph.links).id(d => d.id).distance(90).strength(0.4))
+            .force("charge", d3.forceManyBody().strength(-250))
+            .force("collide", d3.forceCollide().radius(45).strength(0.8))
+            .force("x", d3.forceX().x(d => groupCenters[d.group].x).strength(0.12))
+            .force("y", d3.forceY().y(d => groupCenters[d.group].y).strength(0.12));
+
+        const hullLayer = svg.append("g").attr("class", "hulls");
+
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(graph.links)
+            .enter().append("line")
+            .attr("class", "link");
+
+        const node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(graph.nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("circle")
+            .attr("r", 10)
+            .attr("fill", d => colorScale(d.group))
+            .on("mouseover", function(event, d) {
+                tooltip.transition().duration(200).style("opacity", 1);
+                d3.select("#tt-title").text(d.label);
+                d3.select("#tt-author").text("Source: " + d.author);
+                d3.select("#tt-desc").text(d.description);
+            })
+            .on("mousemove", function(event) {
+                let x = event.pageX + 15;
+                let y = event.pageY + 15;
+                if (x + 340 > window.innerWidth) x = event.pageX - 340;
+                if (y + 150 > window.innerHeight) y = event.pageY - 150;
+                tooltip.style("left", x + "px").style("top", y + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+        node.append("text")
+            .attr("dx", 14)
+            .attr("dy", ".35em")
+            .text(d => d.label);
+
+        const groups = d3.group(graph.nodes, d => d.group);
+
+        simulation.on("tick", function() {
+            let hullData = [];
+            groups.forEach((nodes, groupId) => {
+                if (nodes.length >= 3) {
+                    const points = nodes.map(n => [n.x, n.y]);
+                    const hull = d3.polygonHull(points);
+                    if (hull) {
+                        hullData.push({ group: groupId, path: "M" + hull.join("L") + "Z" });
+                    }
+                } 
+                else if (nodes.length === 2) {
+                    hullData.push({ group: groupId, path: `M${nodes[0].x},${nodes[0].y}L${nodes[1].x},${nodes[1].y}` });
+                }
+                else if (nodes.length === 1) {
+                    hullData.push({ group: groupId, path: `M${nodes[0].x},${nodes[0].y} L${nodes[0].x+0.1},${nodes[0].y}` });
+                }
+            });
+
+            const hulls = hullLayer.selectAll("path").data(hullData, d => d.group);
+            
+            hulls.enter().append("path")
+                .attr("class", "hull")
+                .merge(hulls)
+                .attr("d", d => d.path)
+                .style("fill", d => colorScale(d.group))
+                .style("stroke", d => colorScale(d.group));
+
+            hulls.exit().remove();
+
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        window.addEventListener('resize', () => {
+            svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+        });
+    </script>
+</body>
+</html>
