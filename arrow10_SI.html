@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Archer's Paradox — SI Physics Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono:wght@400&display=swap');
+
+/* ========== DARK THEME (default) ========== */
+:root, [data-theme="night"] {
+  --bg:        #060a0e;
+  --surface:   #0b1117;
+  --panel:     #0f1820;
+  --panel2:    #111e28;
+  --border:    #1a2d3d;
+  --text:      #bdd0e0;
+  --muted:     #3d5568;
+  --blue:      #4da8da;
+  --green:     #2fc98e;
+  --red:       #f05050;
+  --amber:     #e8a030;
+  --gblue:     rgba(77,168,218,0.25);
+  --ggreen:    rgba(47,201,142,0.25);
+  --sky-top:   #020508;
+  --sky-bot:   #060e18;
+  --grass:     rgba(25,55,30,0.6);
+  --grass-line:rgba(40,90,50,0.5);
+  --ruler-col: rgba(60,90,110,0.7);
+  --scan-col:  rgba(77,168,218,0.012);
+  --canvas-bg: #020508;
+  --tgt-ring1: #dde8f0;
+  --tgt-ring2: #0d1822;
+}
+
+/* ========== SUNNY THEME ========== */
+[data-theme="sunny"] {
+  --bg:        #e8dfc8;
+  --surface:   #f0e8d4;
+  --panel:     #ede4cc;
+  --panel2:    #e4dac0;
+  --border:    #c8b890;
+  --text:      #2a1e0a;
+  --muted:     #7a6040;
+  --blue:      #1a6aaa;
+  --green:     #228844;
+  --red:       #cc2222;
+  --amber:     #aa6600;
+  --gblue:     rgba(26,106,170,0.2);
+  --ggreen:    rgba(34,136,68,0.2);
+  --sky-top:   #5ab0e8;
+  --sky-bot:   #a8d8f8;
+  --grass:     rgba(60,140,40,0.55);
+  --grass-line:rgba(30,110,20,0.6);
+  --ruler-col: rgba(60,40,10,0.5);
+  --scan-col:  rgba(0,0,0,0);
+  --canvas-bg: transparent;
+  --tgt-ring1: #f5f0e0;
+  --tgt-ring2: #2a1800;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  font-family:'Rajdhani',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:18px 20px 40px;
+  transition: background 0.4s, color 0.3s;
+}
+
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:1000;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px, var(--scan-col) 2px, var(--scan-col) 4px);
+}
+
+.container { max-width:1180px; margin:0 auto; position: relative; z-index: 1;}
+
+/* ── HEADER ── */
+header {
+  display:flex; align-items:center; gap:14px;
+  padding-bottom:14px; margin-bottom:18px; border-bottom:1px solid var(--border);
+}
+header h1 {
+  font-size:2rem; font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; color:var(--blue); text-shadow:0 0 22px var(--gblue);
+}
+header .sub { font-family:'Share Tech Mono',monospace; font-size:0.8rem; color:var(--muted); letter-spacing:0.06em; }
+.header-right { margin-left:auto; display:flex; gap:10px; align-items:center; }
+.g98 { font-family:'Share Tech Mono',monospace; font-size:0.72rem; color:var(--green); border:1px solid var(--green); padding:3px 9px; }
+
+/* THEME TOGGLE */
+.theme-toggle {
+  display:flex; align-items:center; gap:0; border:1px solid var(--border);
+  overflow:hidden; font-family:'Share Tech Mono',monospace; font-size:0.7rem; border-radius: 4px;
+}
+.theme-btn {
+  padding:4px 12px; cursor:pointer; background:transparent;
+  border:none; color:var(--muted); letter-spacing:0.06em; transition:all 0.2s;
+}
+.theme-btn.active { background:var(--blue); color:var(--bg); }
+[data-theme="sunny"] .theme-btn.active { background:var(--amber); color:#fff; }
+
+/* ── MAIN LAYOUT ── */
+.main-grid { display:grid; grid-template-columns:1fr 260px; gap:16px; }
+
+/* ── CANVAS AREA ── */
+.canvas-wrap {
+  position:relative; background:var(--canvas-bg);
+  border:1px solid var(--border); border-top:2px solid var(--blue);
+  overflow:hidden; border-radius: 4px; transition:border-color 0.3s, background 0.4s;
+}
+canvas#c { display:block; width:100%; height:380px; }
+
+/* IMPACT CAM OVERLAY */
+.impact-cam {
+  position:absolute; top:10px; right:10px; width:180px; height:180px;
+  border:1px solid var(--border); background:var(--panel); overflow:hidden;
+  pointer-events:none; transition: border-color 0.3s, box-shadow 0.3s; border-radius: 6px;
+}
+.impact-cam.has-impact { border-color: var(--blue); box-shadow: 0 0 14px rgba(77,168,218,0.22); }
+[data-theme="sunny"] .impact-cam { background:#f4f0e8; border-color:#c8b890; }
+[data-theme="sunny"] .impact-cam.has-impact { border-color:#1a6aaa; }
+.impact-cam canvas { display:block; width:100%; height:100%; }
+.cam-label { position:absolute; top:5px; left:7px; font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--muted); letter-spacing:0.1em; }
+.cam-hit-badge { position:absolute; top:5px; right:7px; font-family:'Share Tech Mono',monospace; font-size:8px; color:var(--red); letter-spacing:0.05em; display:none; }
+.cam-score { position:absolute; bottom:5px; left:0; right:0; text-align:center; font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:0.06em; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.blink { animation:blink 0.9s infinite; }
+
+/* HUD */
+.hud { position:absolute; top:200px; right:12px; font-family:'Share Tech Mono',monospace; font-size:10.5px; color:var(--muted); text-align:right; line-height:1.75; pointer-events:none; }
+.hud b { color:var(--blue); }
+
+/* Legend */
+.c-legend { position:absolute; top:10px; left:12px; font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); line-height:1.9; pointer-events:none; }
+.c-legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+
+/* ── TUNE BAR ── */
+.tune-bar {
+  margin-top:10px; background:var(--panel); border:1px solid var(--border);
+  padding:10px 16px; display:flex; align-items:center; gap:14px;
+  font-family:'Share Tech Mono',monospace; font-size:11px; transition:background 0.3s;
+}
+.tune-label { color:var(--muted); letter-spacing:0.06em; }
+.tune-status { font-size:12px; font-weight:700; letter-spacing:0.08em; padding:3px 12px; border:1px solid; transition:all 0.3s; }
+.tune-status.good  { color:var(--green); border-color:var(--green); background:rgba(47,201,142,0.08); }
+.tune-status.soft  { color:var(--amber); border-color:var(--amber); background:rgba(232,160,48,0.08); }
+.tune-status.stiff { color:var(--red);   border-color:var(--red);   background:rgba(240,80,80,0.08); }
+.tune-status.none  { color:var(--muted); border-color:var(--muted); background:transparent; }
+.kappa-row { margin-left:auto; display:flex; gap:18px; font-size:10px; }
+.kappa-row span { color:var(--muted); }
+.kappa-row b { color:var(--blue); }
+
+/* ── CONTROLS ── */
+.controls-row {
+  display:grid; grid-template-columns:repeat(5,1fr) auto;
+  gap:14px; margin-top:12px; background:var(--panel); border:1px solid var(--border);
+  padding:16px 18px; align-items:end; transition:background 0.3s;
+}
+.ctrl { display:flex; flex-direction:column; gap:5px; }
+.ctrl-label { font-size:10px; letter-spacing:0.09em; text-transform:uppercase; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+.ctrl-row { display:flex; align-items:center; gap:8px; }
+.ctrl-val { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--blue); min-width:40px; text-align:right; }
+
+input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:4px; background:var(--border); cursor:pointer; border-radius:2px; outline:none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--blue); border:2px solid var(--bg); box-shadow:0 0 7px var(--gblue); cursor:pointer; }
+
+.rand-btn {
+  background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+  cursor: pointer; border-radius: 4px; padding: 2px 5px; font-size: 11px; transition: 0.2s;
+}
+.rand-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+.shoot-btn {
+  font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; letter-spacing:0.14em;
+  text-transform:uppercase; background:transparent; color:var(--green); border:1px solid var(--green);
+  padding:10px 20px; cursor:pointer; height:42px; transition:all 0.14s; white-space:nowrap; border-radius: 4px;
+}
+.shoot-btn:hover { background:var(--green); color:var(--bg); }
+.shoot-btn:active { transform:scale(0.96); }
+
+/* ── PHYSICS STRIP ── */
+.physics-strip { margin-top:12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.pcard { background:var(--panel); border:1px solid var(--border); border-top:1px solid var(--blue); padding:10px 12px; transition:background 0.3s; }
+.pcard.green { border-top-color:var(--green); }
+.pcard.amber { border-top-color:var(--amber); }
+.pcard h4 { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.pval { font-size:1.3rem; font-weight:700; color:var(--blue); letter-spacing:0.04em; }
+.pcard.green .pval { color:var(--green); }
+.pcard.amber .pval { color:var(--amber); }
+.punit { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--muted); }
+.pdesc { font-size:0.75rem; color:var(--muted); margin-top:3px; line-height:1.4; }
+
+/* ── RIGHT PANEL ── */
+.spine-panel { display:flex; flex-direction:column; gap:12px; }
+.panel-title { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); padding-bottom:8px; border-bottom:1px solid var(--border); }
+.spine-cards { display:flex; flex-direction:column; gap:6px; }
+.spine-card { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--border); padding:10px 12px; cursor:pointer; transition:all 0.14s; user-select:none; }
+.spine-card:hover { background:var(--panel2); border-color:var(--blue); }
+.spine-card.selected { border-left-color:var(--blue); background:var(--panel2); }
+.spine-card.selected.c9  { border-left-color:#c04030; }
+.spine-card.selected.c5  { border-left-color:#c87a0a; }
+.spine-card.selected.c21 { border-left-color:#2a8050; }
+.spine-card.selected.c11 { border-left-color:#1a6aaa; }
+.sc-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.sc-name { font-size:1.1rem; font-weight:700; letter-spacing:0.06em; color:var(--text); }
+.sc-d { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); }
+.sc-bar-wrap { height:3px; background:var(--border); border-radius:2px; margin-bottom:5px; }
+.sc-bar { height:100%; border-radius:2px; }
+.sc-kappa { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--muted); }
+.sc-kappa b { color:var(--blue); }
+.validity-grid { background:var(--panel); border:1px solid var(--border); padding:10px 12px; transition:background 0.3s; }
+.vg-title { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.vg-table { width:100%; border-collapse:collapse; font-family:'Share Tech Mono',monospace; font-size:9px; }
+.vg-table th { color:var(--muted); font-weight:400; padding:2px 3px; border-bottom:1px solid var(--border); text-align:center; }
+.vg-table td { text-align:center; padding:3px 2px; }
+.vg-cell { width:14px; height:14px; border-radius:2px; display:inline-block; vertical-align:middle; }
+.vg-match   { background:rgba(47,201,142,0.7); }
+.vg-off     { background:rgba(240,80,80,0.4); }
+.vg-empty   { background:rgba(128,128,128,0.12); }
+.vg-current { outline:2px solid var(--blue); outline-offset:1px; }
+
+@media(max-width:900px) { .main-grid { grid-template-columns:1fr; } .controls-row { grid-template-columns:1fr 1fr; } .physics-strip { grid-template-columns:1fr 1fr; } }
+@media(max-width:560px) { .controls-row { grid-template-columns:1fr; } .shoot-btn { width:100%; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Archer's Paradox</h1>
+  <div class="sub">Spine Tuning · Ballistics · Euler-Bernoulli Bending</div>
+  <div class="header-right">
+    <div class="g98">g = 9.8 m/s²</div>
+    <div class="theme-toggle">
+      <button class="theme-btn" id="btnNight" onclick="setTheme('night')">🌙 NIGHT</button>
+      <button class="theme-btn" id="btnSunny" onclick="setTheme('sunny')">☀ SUNNY</button>
+    </div>
+  </div>
+</header>
+
+<div class="main-grid">
+  <div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="c"></canvas>
+
+      <div class="impact-cam" id="impactCam">
+        <canvas id="camC"></canvas>
+        <div class="cam-label">IMPACT CAM</div>
+        <div class="cam-hit-badge blink" id="camHitBadge">✕ HIT</div>
+        <div class="cam-score" id="camScore">awaiting shot</div>
+      </div>
+
+      <div class="c-legend" id="cLegend">
+        <div><i style="background:var(--gblue)"></i>CoM parabola</div>
+        <div><i style="background:var(--purple);border-radius:50%"></i>Tail trace</div>
+        <div><i style="background:#fff;border-radius:50%"></i>Center of mass</div>
+        <div><i style="background:var(--red);border-radius:50%"></i>Bending nodes</div>
+      </div>
+      <div class="hud">
+        PHASE <b id="hudPhase">READY</b><br>
+        t = <b id="hudT">0.000</b> s<br>
+        h = <b id="hudH">0.0</b> m<br>
+        v = <b id="hudV">—</b> m/s<br>
+        x = <b id="hudX">—</b> m<br>
+        amp = <b id="hudAmp">—</b> cm
+      </div>
+    </div>
+
+    <div class="tune-bar">
+      <span class="tune-label">SPINE TUNE:</span>
+      <div class="tune-status none" id="tuneStatus">—</div>
+      <span class="tune-label" style="margin-left:4px" id="tuneNote">select spine + params</span>
+      <div class="kappa-row">
+        <span>κ=<b id="kappaArrow">—</b></span>
+        <span>κ̄=<b id="kappaSpine">—</b></span>
+        <span>Δ=<b id="kappaDelta">—</b></span>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="ctrl">
+        <div class="ctrl-label">Arrow Length (cm)</div>
+        <div class="ctrl-row">
+          <input type="range" id="slLen" min="40" max="80" value="71" step="1">
+          <div class="ctrl-val" id="vLen">71 cm</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label">Draw Force (N)</div>
+        <div class="ctrl-row">
+          <input type="range" id="slBow" min="65" max="335" value="200" step="5">
+          <div class="ctrl-val" id="vBow">200 N</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label">Launch Angle (°)</div>
+        <div class="ctrl-row">
+          <input type="range" id="slAngle" min="-15" max="45" value="5" step="0.5">
+          <div class="ctrl-val" id="vAngle">5°</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label">Target Dist. (m)</div>
+        <div class="ctrl-row">
+          <input type="range" id="slDist" min="10" max="90" value="40" step="1">
+          <div class="ctrl-val" id="vDist">40 m</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label">Point Mass (μ) Tuner</div>
+        <div class="ctrl-row">
+          <input type="range" id="slMu" min="0.0" max="0.8" value="0.18" step="0.02">
+          <div class="ctrl-val" id="vMu">0.18</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label">Fletch Damping (γ)</div>
+        <div class="ctrl-row">
+          <input type="range" id="slDrag" min="0.005" max="0.150" value="0.040" step="0.005">
+          <div class="ctrl-val" id="vDrag">0.040</div>
+          <button id="btnRandDrag" class="rand-btn" title="Randomize Damping">🎲</button>
+        </div>
+      </div>
+      <button class="shoot-btn" id="shootBtn">▶ Shoot</button>
+    </div>
+
+    <div class="physics-strip">
+      <div class="pcard">
+        <h4>Resonant Freq. f₀</h4>
+        <div><span class="pval" id="pFreq">—</span> <span class="punit">Hz</span></div>
+        <div class="pdesc">f₀ ∝ 1 / (L² √(1 + cμ)) — length & heavy point slow the wiggle</div>
+      </div>
+      <div class="pcard green">
+        <h4>Buckle Amplitude (Kick)</h4>
+        <div><span class="pval" id="pKick">—</span> <span class="punit">px</span></div>
+        <div class="pdesc">A₀ ∝ W·L² / EI — under-spined arrows buckle violently</div>
+      </div>
+      <div class="pcard amber">
+        <h4>Arrowhead mass ratio μ</h4>
+        <div><span class="pval" id="pMu">—</span></div>
+        <div class="pdesc">μ = M_tip/M_shaft — shifts front node toward tip (FOC)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spine-panel">
+    <div class="panel-title">▸ Select Arrow Spine</div>
+    <div class="spine-cards" id="spineCards"></div>
+    <div class="validity-grid">
+      <div class="vg-title">Chart A — AMO Recommended Spine</div>
+      <table class="vg-table" id="vgTable"></table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+let currentTheme = 'night';
+function setTheme(t) {
+  currentTheme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('btnNight').classList.toggle('active', t==='night');
+  document.getElementById('btnSunny').classList.toggle('active', t==='sunny');
+  if (!flying && !zoomActive) drawReady();
+}
+function themeVal(nightVal, sunnyVal) { return currentTheme === 'sunny' ? sunnyVal : nightVal; }
+
+// ══════════════════════════════════════════════
+// SPINE DATA (Mapped to SI for Display)
+// ══════════════════════════════════════════════
+const SPINE_DATA = {
+  '9/32':  { label:'7.1 mm',  d:9/32,   dStr:'7.14 mm', color:'#c04030', stiffPct:0.35, kappaMean:0.02468 },
+  '5/16':  { label:'7.9 mm',  d:5/16,   dStr:'7.94 mm', color:'#c87a0a', stiffPct:0.55, kappaMean:0.02764 },
+  '21/64': { label:'8.3 mm', d:21/64,  dStr:'8.33 mm', color:'#2a8050', stiffPct:0.72, kappaMean:0.02893 },
+  '11/32': { label:'8.7 mm', d:11/32,  dStr:'8.73 mm', color:'#1a6aaa', stiffPct:0.90, kappaMean:0.03040 },
+};
+const SPINE_ORDER = ['9/32','5/16','21/64','11/32'];
+
+// Internal Chart A physics uses AMO standards (lbs). 
+// We display Newtons in the table headers.
+const BOW_RANGES_INTERNAL = ['15-27','28-35','36-45','46-60','60+'];
+const BOW_RANGES_SI       = ['65-120','125-155','160-200','205-265','>265']; 
+const CHART_A = {
+  61:  {'15-27':'9/32','28-35':'9/32','36-45':'5/16'}, // 24"
+  63.5:{'15-27':'9/32','28-35':'9/32','36-45':'5/16','46-60':'21/64','60+':'21/64'}, // 25"
+  66:  {'15-27':'9/32','28-35':'5/16','36-45':'5/16','46-60':'21/64','60+':'11/32'}, // 26"
+  68.5:{'15-27':'9/32','28-35':'5/16','36-45':'5/16','46-60':'21/64','60+':'11/32'}, // 27"
+  71:  {'15-27':'5/16','28-35':'5/16','36-45':'21/64','46-60':'11/32','60+':'11/32'}, // 28"
+  73.5:{'15-27':'5/16','28-35':'21/64','36-45':'11/32','46-60':'11/32','60+':'11/32'}, // 29"
+  76:  {'15-27':'5/16','28-35':'21/64','36-45':'11/32','46-60':'11/32','60+':'11/32'}, // 30"
+};
+
+function bowRange(w_lbs){ 
+    if(w_lbs<=27)return'15-27'; if(w_lbs<=35)return'28-35'; 
+    if(w_lbs<=45)return'36-45'; if(w_lbs<=60)return'46-60'; return'60+'; 
+}
+function nearestChartL(l_cm){ 
+    const ks=Object.keys(CHART_A).map(Number); 
+    return ks.reduce((a,b)=>Math.abs(b-l_cm)<Math.abs(a-l_cm)?b:a); 
+}
+function chartRec(L_cm, W_lbs){ 
+    const r=CHART_A[nearestChartL(L_cm)]; return r?(r[bowRange(W_lbs)]||null):null; 
+}
+
+let selectedSpine = '9/32';
+
+// ══════════════════════════════════════════════
+// SPINE CARDS & GRID
+// ══════════════════════════════════════════════
+function buildSpineCards() {
+  const c = document.getElementById('spineCards'); c.innerHTML='';
+  SPINE_ORDER.forEach(key => {
+    const sp=SPINE_DATA[key], pct=sp.stiffPct*100;
+    const div=document.createElement('div');
+    const selCls = key===selectedSpine ? ' selected '+(key==='9/32'?'c9':key==='5/16'?'c5':key==='21/64'?'c21':'c11') : '';
+    div.className='spine-card'+selCls; div.dataset.spine=key;
+    div.innerHTML=`<div class="sc-top"><span class="sc-name">${sp.label}</span><span class="sc-d">${sp.dStr}</span></div>
+      <div class="sc-bar-wrap"><div class="sc-bar" style="width:${pct}%;background:${sp.color}"></div></div>
+      <div class="sc-kappa">κ̄ = <b>${sp.kappaMean.toFixed(4)}</b> &nbsp;|&nbsp; stiffness ${pct.toFixed(0)}%</div>`;
+    div.addEventListener('click',()=>{ selectedSpine=key; updateAll(); });
+    c.appendChild(div);
+  });
+}
+function refreshSpineCards() {
+  document.querySelectorAll('.spine-card').forEach(el=>{
+    const key=el.dataset.spine, sel=key===selectedSpine;
+    el.className='spine-card'+(sel?' selected '+(key==='9/32'?'c9':key==='5/16'?'c5':key==='21/64'?'c21':'c11'):'');
+  });
+}
+
+function buildValidityGrid() {
+  const tbl=document.getElementById('vgTable');
+  const L_cm=parseFloat(document.getElementById('slLen').value);
+  const W_N=parseFloat(document.getElementById('slBow').value);
+  const W_lbs = W_N / 4.44822; // For chart lookup
+  
+  const br=bowRange(W_lbs), nearL=nearestChartL(L_cm);
+  
+  // Use SI headings for the Bow Weight
+  let h='<tr><th>L (cm)</th>'+BOW_RANGES_SI.map(r=>`<th>${r} N</th>`).join('')+'</tr>';
+  
+  [61,63.5,66,68.5,71,73.5,76].forEach(cl=>{
+    const row=CHART_A[cl]; if(!row)return;
+    const isCL = (cl === nearL);
+    h+=`<tr><td style="color:${isCL?'var(--blue)':'var(--muted)'};font-weight:${isCL?700:400}">${cl}</td>`;
+    
+    BOW_RANGES_INTERNAL.forEach(r=>{
+      const rec=row[r]||null, cls=!rec?'vg-empty':rec===selectedSpine?'vg-match':'vg-off', out=(isCL&&r===br)?' vg-current':'';
+      const label = rec ? SPINE_DATA[rec].label : '—';
+      h+=`<td><span class="vg-cell ${cls}${out}" title="${label}"></span></td>`;
+    });
+    h+='</tr>';
+  });
+  tbl.innerHTML=h;
+}
+
+// ══════════════════════════════════════════════
+// TUNE INDICATOR & PHYSICS MAPPING
+// ══════════════════════════════════════════════
+let g_Omega = 0;
+let g_Kick = 0;
+
+function updateTuneIndicator() {
+  const L_cm = parseFloat(document.getElementById('slLen').value);
+  const W_N  = parseFloat(document.getElementById('slBow').value);
+  const L_in = L_cm / 2.54;
+  const W_lbs = W_N / 4.44822;
+  const sp = SPINE_DATA[selectedSpine];
+  
+  const kA = sp.d / (Math.sqrt(L_in) * Math.pow(W_lbs, 0.25)), kS = sp.kappaMean, d = (kA - kS) / kS * 100;
+  document.getElementById('kappaArrow').textContent=kA.toFixed(4); document.getElementById('kappaSpine').textContent=kS.toFixed(4); document.getElementById('kappaDelta').textContent=d.toFixed(1)+'%';
+  
+  const rec=chartRec(L_cm, W_lbs), sEl=document.getElementById('tuneStatus'), nEl=document.getElementById('tuneNote');
+  if(rec===selectedSpine){ 
+      sEl.className='tune-status good'; sEl.textContent='✓ TUNED'; 
+      nEl.textContent=`Chart A: ${SPINE_DATA[selectedSpine].label} correct for ${L_cm} cm at ${W_N} N`; 
+  } else if(!rec){ 
+      sEl.className='tune-status none'; sEl.textContent='— N/A'; 
+      nEl.textContent='No Chart A data for this combo'; 
+  } else {
+    const soft=SPINE_DATA[selectedSpine].d < SPINE_DATA[rec].d;
+    sEl.className='tune-status '+(soft?'soft':'stiff'); sEl.textContent=soft?'↓ TOO SOFT':'↑ TOO STIFF';
+    nEl.textContent=`Chart A recommends ${SPINE_DATA[rec].label} — `+(soft?'arrow overflexes':'insufficient bending');
+  }
+}
+
+function updatePhysicsStrip() {
+  const L_cm = parseFloat(document.getElementById('slLen').value);
+  const W_N  = parseFloat(document.getElementById('slBow').value);
+  const mu   = parseFloat(document.getElementById('slMu').value);
+  const sp   = SPINE_DATA[selectedSpine];
+  
+  // Dynamic derivations for amplitude and frequency
+  // Normalized around a standard 71cm (~28") arrow and 200N (~45lbs) force
+  const L_norm = L_cm / 71;
+  const W_norm = W_N / 200;
+  const EI_norm = Math.pow(sp.d / (5/16), 4);
+  
+  // Base Kick calculation (Amplitude A0)
+  let theoreticalKick = 28 * W_norm * Math.pow(L_norm, 2) / EI_norm;
+  theoreticalKick *= (1 + mu * 0.8);
+  g_Kick = Math.min(100, Math.max(5, theoreticalKick));
+  
+  // Base Frequency calculation (~60 Hz in real life for tuned 28")
+  const relativeFreq = (1 / Math.pow(L_norm, 2)) / Math.sqrt(1 + 1.2 * mu) * 60;
+  
+  // Clearance Time calculation (Tau)
+  // v0 in m/s based on Newtons. 200N ~ 45lbs.
+  const W_lbs = W_N / 4.44822;
+  const v0_ms = 4.5 * Math.sqrt(W_lbs) * 0.3048;
+  const tau_ms = ( (L_cm/100) / v0_ms ) * 1000;
+  
+  document.getElementById('pFreq').textContent = relativeFreq.toFixed(1);
+  document.getElementById('pTau').textContent = tau_ms.toFixed(1);
+  document.getElementById('pKick').textContent = g_Kick.toFixed(1);
+  document.getElementById('pMu').textContent   = mu.toFixed(2);
+}
+
+// ══════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const DPR=window.devicePixelRatio||1;
+const G=9.8, ARROW_PX=140, BETA_L=4.73004, SIGMA=0.9825;
+const BASE_OMEGA=(6*Math.PI*2)/90;
+
+function cW(){return canvas.width/DPR;} function cH(){return canvas.height/DPR;}
+function resizeCanvas(){
+  const r=canvas.parentElement.getBoundingClientRect();
+  canvas.width=r.width*DPR; canvas.height=r.height*DPR; ctx.scale(DPR,DPR);
+}
+
+let zoomActive = false, zoomStartFrame = 0, zoomTargetX = 0, zoomTargetY = 0;
+const ZOOM_DURATION = 28;
+
+window.addEventListener('resize',()=>{ resizeCanvas(); if(!flying && !zoomActive)drawReady(); }); resizeCanvas();
+
+function modeShape(u,mu){
+  const n1=0.224+mu*(0.33-0.224), n2=0.776+mu*(0.95-0.776);
+  const m=0.552/(n2-n1), c=0.224-m*n1, bx=BETA_L*(m*u+c);
+  return Math.cos(bx)+Math.cosh(bx)-SIGMA*(Math.sin(bx)+Math.sinh(bx));
+}
+function bendAngle(u,amp,mu){
+  const h=0.01, dy=(modeShape(Math.min(u+h,1),mu)-modeShape(Math.max(u-h,0),mu))*amp;
+  return Math.atan2(dy,(Math.min(u+h,1)-Math.max(u-h,0))*ARROW_PX);
+}
+function layout(){ const PL=90,PR=90,GROUND=cH()-55, spanPx=cW()-PL-PR; return{PL,PR,GROUND,spanPx,startX:PL,endX:PL+spanPx}; }
+function buildTrace(startX,startY,vx,vy,gPxF,ground){
+  const pts=[]; let x=startX,y=startY,curvy=vy;
+  for(let f=0;f<600;f++){ pts.push({x,y}); x+=vx; curvy+=gPxF; y+=curvy; if(y>=ground)break; }
+  return pts;
+}
+
+// ── Theme-aware draw helpers ──────────────────
+function drawSky(ground) {
+  if(currentTheme==='sunny'){
+    const grd=ctx.createLinearGradient(0,0,0,ground);
+    grd.addColorStop(0,'#3898d8'); grd.addColorStop(0.6,'#7ec8f0'); grd.addColorStop(1,'#b8e4f8');
+    ctx.fillStyle=grd; ctx.fillRect(0,0,cW(),ground);
+    ctx.save(); ctx.beginPath(); ctx.arc(cW()-60,42,22,0,Math.PI*2);
+    const sun=ctx.createRadialGradient(cW()-60,42,4,cW()-60,42,22);
+    sun.addColorStop(0,'#fff8a0'); sun.addColorStop(1,'#f8c020'); ctx.fillStyle=sun; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.fillStyle='rgba(140,180,200,0.4)'; ctx.beginPath(); ctx.moveTo(0,ground-30);
+    for(let x=0;x<=cW();x+=40){ const h=20+Math.sin(x*0.05)*18+Math.sin(x*0.11)*10; ctx.lineTo(x,ground-h); }
+    ctx.lineTo(cW(),ground-30); ctx.lineTo(cW(),ground); ctx.lineTo(0,ground); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+}
+function drawGround(ground) {
+  if(currentTheme==='sunny'){
+    const grd=ctx.createLinearGradient(0,ground,0,ground+40);
+    grd.addColorStop(0,'#3a9030'); grd.addColorStop(0.5,'#5ab040'); grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd; ctx.fillRect(0,ground,cW(),40);
+    ctx.save(); ctx.strokeStyle='rgba(30,110,20,0.3)'; ctx.lineWidth=1;
+    for(let x=0;x<cW();x+=18){ ctx.beginPath(); ctx.moveTo(x,ground); ctx.lineTo(x-3,ground-8); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x+9,ground); ctx.lineTo(x+12,ground-7); ctx.stroke(); }
+    ctx.restore(); ctx.beginPath(); ctx.moveTo(0,ground); ctx.lineTo(cW(),ground); ctx.strokeStyle='rgba(30,110,20,0.7)'; ctx.lineWidth=2; ctx.stroke();
+  } else {
+    const grd=ctx.createLinearGradient(0,ground,0,ground+28);
+    grd.addColorStop(0,'rgba(25,55,30,0.6)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd; ctx.fillRect(0,ground,cW(),30); ctx.beginPath(); ctx.moveTo(0,ground); ctx.lineTo(cW(),ground); ctx.strokeStyle='rgba(40,90,50,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+}
+function drawRuler(ly, distM) {
+  const tickEvery=distM<=50?10:20, nTicks=Math.floor(distM/tickEvery);
+  ctx.fillStyle=themeVal('rgba(60,90,110,0.7)','rgba(60,40,10,0.55)');
+  ctx.font='10px "Share Tech Mono",monospace'; ctx.textAlign='center';
+  for(let i=1;i<=nTicks;i++){
+    const tx=ly.startX+(i*tickEvery/distM)*ly.spanPx;
+    ctx.fillRect(tx-0.5,ly.GROUND,1,6); ctx.fillText(i*tickEvery+'m',tx,ly.GROUND+18);
+  }
+  ctx.textAlign='left';
+}
+function drawSideTarget(x, ground, pxPerM) {
+  const tY = ground - 1.3*pxPerM; 
+  ctx.beginPath(); ctx.moveTo(x, ground); ctx.lineTo(x, tY);
+  ctx.strokeStyle = currentTheme==='sunny'?'#c9b280':'#334155'; ctx.lineWidth=4; ctx.stroke();
+  const cols = currentTheme === 'sunny' ? ['#fff2e0','#c2843c','#d95b2a','#b1230a'] : ['#dde8f0','#0d1822','#4da8da','#f05050'];
+  [40,30,20,10].forEach((r, i) => {
+    ctx.beginPath(); ctx.ellipse(x, tY, 4, r, 0, 0, Math.PI*2); ctx.fillStyle=cols[i]; ctx.fill();
+  });
+}
+
+function drawArrow(ctx_, cx,cy,flightAngle,amp,mu,spineColor,arrowPx=ARROW_PX){
+  const perpX=-Math.sin(flightAngle), perpY=Math.cos(flightAngle);
+  ctx_.beginPath(); ctx_.lineWidth=3.5; ctx_.lineCap='round';
+  ctx_.strokeStyle=spineColor||'#9ab0c0';
+  const STEPS=24;
+  for(let i=0;i<=STEPS;i++){
+    const u=i/STEPS;
+    const bx=cx+(u-0.5)*arrowPx*Math.cos(flightAngle);
+    const by=cy+(u-0.5)*arrowPx*Math.sin(flightAngle);
+    const b=amp*modeShape(u,mu);
+    i===0?ctx_.moveTo(bx+b*perpX,by+b*perpY):ctx_.lineTo(bx+b*perpX,by+b*perpY);
+  }
+  ctx_.stroke();
+  
+  const tb=amp*modeShape(1,mu);
+  const tpx=cx+0.5*arrowPx*Math.cos(flightAngle)+tb*perpX;
+  const tpy=cy+0.5*arrowPx*Math.sin(flightAngle)+tb*perpY;
+  const ts=1+mu*1.2;
+  ctx_.save(); ctx_.translate(tpx,tpy); ctx_.rotate(flightAngle+bendAngle(1,amp,mu));
+  ctx_.beginPath();
+  ctx_.moveTo(14*ts,0); ctx_.lineTo(-4*ts,5.5*ts); ctx_.lineTo(-2*ts,0); ctx_.lineTo(-4*ts,-5.5*ts);
+  ctx_.fillStyle=themeVal('#d0e8ff','#eef4fa'); ctx_.fill(); ctx_.restore();
+  
+  const fb=amp*modeShape(0,mu);
+  const flx=cx-0.5*arrowPx*Math.cos(flightAngle)+fb*perpX;
+  const fly_=cy-0.5*arrowPx*Math.sin(flightAngle)+fb*perpY;
+  ctx_.save(); ctx_.translate(flx,fly_); ctx_.rotate(flightAngle+bendAngle(0,amp,mu));
+  ctx_.fillStyle=themeVal('#2fc98e','#228844');
+  ctx_.beginPath(); ctx_.roundRect(-22,-11,24,7,2); ctx_.fill();
+  ctx_.beginPath(); ctx_.roundRect(-22,4,24,7,2); ctx_.fill(); ctx_.restore();
+  
+  [0.224+mu*(0.33-0.224), 0.776+mu*(0.95-0.776)].forEach(u=>{
+    const nb=amp*modeShape(u,mu);
+    const nx=cx+(u-0.5)*arrowPx*Math.cos(flightAngle)+nb*perpX;
+    const ny=cy+(u-0.5)*arrowPx*Math.sin(flightAngle)+nb*perpY;
+    ctx_.beginPath(); ctx_.arc(nx,ny,4,0,Math.PI*2); ctx_.fillStyle='#f05050'; ctx_.fill();
+  });
+  
+  ctx_.beginPath(); ctx_.arc(cx,cy,5,0,Math.PI*2);
+  ctx_.fillStyle='#fff'; ctx_.fill();
+  ctx_.strokeStyle='rgba(77,168,218,0.9)'; ctx_.lineWidth=1.5; ctx_.stroke();
+}
+
+function drawImpactParticles(x, y, fOffset) {
+  for(let i=0; i<12; i++) {
+    const angle = (fOffset*0.5 + i)*Math.PI*2/12, rad = 12 + (fOffset%8)*2;
+    ctx.beginPath(); ctx.arc(x+Math.cos(angle)*rad, y+Math.sin(angle)*rad, 2+Math.sin(fOffset)*1.5, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(255, 120, 40, ${0.8-Math.min(0.6,fOffset/15)})`; ctx.fill();
+  }
+}
+
+// ── Simulation state ──────────────────────────
+let flying=false, rafId=null;
+let sx,sy,svx,svy,sgPx,sFrame;
+let sMu,sKick,sDrag,sOmega,sPxPerM,sEndX,sGROUND,sDistM,sTargetY;
+let sTailTrace=[],sComTrace=[];
+
+// ── IMPACT CAM ────────────────────────────────
+const camEl  = document.getElementById('impactCam');
+const camC   = document.getElementById('camC');
+const camCtx = camC.getContext('2d');
+const CAM_SIZE = 180, CAM_DPR = DPR;
+let pastHits = [];
+
+function initCamCanvas(){
+  camC.width=CAM_SIZE*CAM_DPR; camC.height=CAM_SIZE*CAM_DPR;
+  camC.style.width=CAM_SIZE+'px'; camC.style.height=CAM_SIZE+'px'; camCtx.scale(CAM_DPR, CAM_DPR);
+}
+initCamCanvas();
+
+function drawCamIdle() {
+  camCtx.setTransform(CAM_DPR, 0, 0, CAM_DPR, 0, 0); camCtx.clearRect(0, 0, CAM_SIZE, CAM_SIZE);
+  camCtx.fillStyle = themeVal('#08121a', '#ece8de'); camCtx.fillRect(0, 0, CAM_SIZE, CAM_SIZE);
+  const cx=CAM_SIZE/2, cy=CAM_SIZE/2;
+  
+  const cols = currentTheme === 'sunny' ? ['#fff2e0','#c2843c','#d95b2a','#b1230a'] : ['#dde8f0','#0d1822','#4da8da','#f05050'];
+  [[72,cols[0]],[54,cols[1]],[36,cols[2]],[18,cols[3]]].forEach(([r, c]) => {
+    camCtx.beginPath(); camCtx.arc(cx, cy, r, 0, Math.PI*2); camCtx.fillStyle=c; camCtx.fill();
+    camCtx.strokeStyle = themeVal('rgba(255,255,255,0.06)','rgba(0,0,0,0.12)'); camCtx.lineWidth=0.5; camCtx.stroke();
+  });
+  
+  pastHits.forEach(h => {
+    camCtx.beginPath(); camCtx.arc(cx+h.dx, cy+h.dy, 3, 0, Math.PI*2);
+    camCtx.fillStyle=h.color; camCtx.fill(); camCtx.strokeStyle='#fff'; camCtx.lineWidth=1; camCtx.stroke();
+  });
+
+  camCtx.font='7px "Share Tech Mono",monospace'; camCtx.textAlign='center'; camCtx.textBaseline='middle';
+  [[63,'1'],[45,'2'],[27,'3'],[0,'X']].forEach(([r, lbl]) => {
+    camCtx.fillStyle=r===0?'#fff':themeVal('rgba(255,255,255,0.35)','rgba(0,0,0,0.3)'); if(r>0)camCtx.fillText(lbl, cx, cy-r+8);
+  });
+  camCtx.strokeStyle=themeVal('rgba(77,168,218,0.3)','rgba(26,106,170,0.3)'); camCtx.lineWidth=0.8; camCtx.setLineDash([3, 4]);
+  camCtx.beginPath(); camCtx.moveTo(cx, 4); camCtx.lineTo(cx, CAM_SIZE-4); camCtx.stroke();
+  camCtx.beginPath(); camCtx.moveTo(4, cy); camCtx.lineTo(CAM_SIZE-4, cy); camCtx.stroke(); camCtx.setLineDash([]);
+}
+
+function drawCamImpact(tipLateralPx, dropPx, spineColor) {
+  const scale = 72 / 40; 
+  const hitY_cam = dropPx * scale; 
+  const hitX_cam = tipLateralPx * scale; 
+
+  pastHits.push({dx: hitX_cam, dy: hitY_cam, color: spineColor});
+  if(pastHits.length > 20) pastHits.shift();
+
+  drawCamIdle();
+
+  const cx = CAM_SIZE / 2, cy = CAM_SIZE / 2;
+  const hitPx = cx + hitX_cam, hitPy = cy + hitY_cam; 
+
+  const hs = 7; camCtx.save(); camCtx.shadowColor=spineColor; camCtx.shadowBlur=10; camCtx.strokeStyle=spineColor; camCtx.lineWidth=2.5; camCtx.lineCap='round';
+  camCtx.beginPath(); camCtx.moveTo(hitPx-hs, hitPy-hs); camCtx.lineTo(hitPx+hs, hitPy+hs); camCtx.stroke();
+  camCtx.beginPath(); camCtx.moveTo(hitPx+hs, hitPy-hs); camCtx.lineTo(hitPx-hs, hitPy+hs); camCtx.stroke();
+  camCtx.shadowBlur=0; camCtx.beginPath(); camCtx.arc(hitPx, hitPy, 2.5, 0, Math.PI*2); camCtx.fillStyle='#fff'; camCtx.fill(); camCtx.restore();
+  
+  const dist = Math.sqrt(hitX_cam*hitX_cam + hitY_cam*hitY_cam); let score, scoreColor;
+  if(dist<=18){ score='X (bullseye)'; scoreColor='#f05050'; }
+  else if(dist<=36){ score='3 pts'; scoreColor='#4da8da'; }
+  else if(dist<=54){ score='2 pts'; scoreColor=themeVal('#bbd','#444'); }
+  else if(dist<=72){ score='1 pt';  scoreColor=themeVal('#889','#666'); }
+  else { score='MISS'; scoreColor='#f05050'; }
+  document.getElementById('camScore').textContent=score; document.getElementById('camScore').style.color=scoreColor;
+  document.getElementById('camHitBadge').style.display='block'; camEl.classList.add('has-impact');
+}
+
+function drawReady(){
+  const ly=layout(); ly_global=ly;
+  const angRad=parseFloat(document.getElementById('slAngle').value)*Math.PI/180;
+  const distM=parseFloat(document.getElementById('slDist').value);
+  const mu=parseFloat(document.getElementById('slMu').value), sp=SPINE_DATA[selectedSpine];
+
+  ctx.clearRect(0,0,cW(),cH()); drawSky(ly.GROUND); drawGround(ly.GROUND);
+  drawRuler(ly,distM); 
+  
+  const pxPerM=ly.spanPx/distM;
+  const targetY = ly.GROUND - 1.3*pxPerM;
+  drawSideTarget(ly.endX, ly.GROUND, pxPerM);
+
+  const vx0=ly.spanPx/90, gPxF=G*pxPerM/3600, vy0=-vx0*Math.tan(angRad);
+  const pts=buildTrace(ly.startX,targetY,vx0,vy0,gPxF,ly.GROUND+5);
+  if(pts.length>1){
+    ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.setLineDash([5,7]);
+    ctx.strokeStyle=themeVal('rgba(77,168,218,0.2)','rgba(26,106,170,0.25)');
+    ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]);
+  }
+  drawArrow(ctx,ly.startX,targetY,-angRad,0,mu,sp.color);
+}
+
+// ── Shoot ─────────────────────────────────────
+function shoot(){
+  if(rafId)cancelAnimationFrame(rafId);
+  sTailTrace=[]; zoomActive=false;
+  document.getElementById('camHitBadge').style.display='none'; camEl.classList.remove('has-impact');
+  
+  const ly=layout(); ly_global=ly;
+  const angRad=parseFloat(document.getElementById('slAngle').value)*Math.PI/180;
+  const distM=parseFloat(document.getElementById('slDist').value);
+  const L_cm=parseFloat(document.getElementById('slLen').value);
+  const sp=SPINE_DATA[selectedSpine];
+
+  sMu=parseFloat(document.getElementById('slMu').value); 
+  sDrag=parseFloat(document.getElementById('slDrag').value);
+  
+  const L_norm = L_cm / 71;
+  sOmega = BASE_OMEGA * Math.pow(1 / L_norm, 2) / Math.sqrt(1 + 1.2 * sMu);
+  sKick = g_Kick;
+  
+  sDistM=distM; sGROUND=ly.GROUND; sEndX=ly.endX; sPxPerM=ly.spanPx/distM;
+  sTargetY = sGROUND - 1.3*sPxPerM;
+  svx=ly.spanPx/90; sgPx=G*sPxPerM/3600; svy=-svx*Math.tan(angRad);
+  
+  sx=ly.startX; sy=sTargetY; sFrame=0; flying=true;
+  sComTrace=buildTrace(ly.startX,sTargetY,svx,svy,sgPx,ly.GROUND+5);
+  document.getElementById('hudPhase').textContent='FLIGHT';
+
+  const hex=sp.color, rr=parseInt(hex.slice(1,3),16),gg_=parseInt(hex.slice(3,5),16),bb=parseInt(hex.slice(5,7),16);
+  const traceColor=`rgba(${rr},${gg_},${bb},0.5)`;
+
+  function frame(){
+    if(!flying && !zoomActive) return;
+    if(flying) { sx+=svx; sy+=svy; svy+=sgPx; sFrame++; sComTrace.push({x:sx, y:sy}); }
+
+    const amp = flying ? sKick*Math.exp(-sDrag*sFrame*0.3)*Math.cos(sOmega*sFrame) : 0;
+    const flightAngle = flying ? Math.atan2(svy,svx) : 0;
+    const perpX=-Math.sin(flightAngle), perpY=Math.cos(flightAngle);
+
+    if (flying) {
+      const fb=amp*modeShape(0,sMu);
+      sTailTrace.push({ x:sx-0.5*ARROW_PX*Math.cos(flightAngle)+fb*perpX, y:sy-0.5*ARROW_PX*Math.sin(flightAngle)+fb*perpY });
+      if(sTailTrace.length>500)sTailTrace.shift();
+    }
+
+    if(flying && (sx>=sEndX||sy>=sGROUND)){
+      flying=false;
+      
+      if (sy >= sGROUND && sx < sEndX) {
+        sy = sGROUND;
+        document.getElementById('hudPhase').textContent = 'GROUNDED (SHORT)';
+      } else {
+        sx = sEndX;
+        if (sy >= sGROUND) {
+          sy = sGROUND;
+          document.getElementById('hudPhase').textContent = 'GROUNDED (POLE BASE)';
+        } else {
+          const dy = sy - sTargetY;
+          if (Math.abs(dy) <= 48) { 
+            const tipBend = amp * modeShape(1, sMu);
+            drawCamImpact(tipBend, dy, sp.color);
+            document.getElementById('hudPhase').textContent = 'TARGET HIT';
+          } else if (dy > 48) {
+            document.getElementById('hudPhase').textContent = 'HIT POLE';
+          } else {
+            document.getElementById('hudPhase').textContent = 'MISSED HIGH';
+          }
+        }
+      }
+
+      zoomActive = true; 
+      zoomStartFrame = sFrame; 
+      zoomTargetX = sx; 
+      zoomTargetY = sy;
+    }
+
+    document.getElementById('hudT').textContent=(sFrame/60).toFixed(3);
+    document.getElementById('hudH').textContent=Math.max(0,(sGROUND-sy)/sPxPerM).toFixed(1);
+    document.getElementById('hudV').textContent=flying?(Math.sqrt(svx*svx+svy*svy)/sPxPerM*60).toFixed(1):'0.0';
+    document.getElementById('hudX').textContent=((sx-layout().startX)/sPxPerM).toFixed(1);
+    document.getElementById('hudAmp').textContent=Math.abs(amp).toFixed(1);
+
+    ctx.clearRect(0,0,cW(),cH());
+    const cur_ly={GROUND:sGROUND,startX:layout().startX,spanPx:layout().spanPx,endX:sEndX};
+    drawSky(sGROUND); drawGround(sGROUND); drawRuler(cur_ly,sDistM); drawSideTarget(sEndX, sGROUND, sPxPerM);
+
+    if(sComTrace.length>1){
+      ctx.beginPath(); sComTrace.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+      ctx.setLineDash([5,7]); ctx.strokeStyle=themeVal('rgba(77,168,218,0.18)','rgba(26,106,170,0.22)');
+      ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]);
+    }
+    if(sTailTrace.length>1){
+      ctx.beginPath(); sTailTrace.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+      ctx.strokeStyle=traceColor; ctx.lineWidth=2.2; ctx.stroke();
+    }
+
+    if(zoomActive){
+      let t = (sFrame - zoomStartFrame) / ZOOM_DURATION;
+      if (t >= 1.0) zoomActive = false;
+      else {
+        const zoom = 1 + Math.sin(t * Math.PI) * 1.8;
+        ctx.save(); ctx.translate(zoomTargetX, zoomTargetY); ctx.scale(zoom, zoom); ctx.translate(-zoomTargetX, -zoomTargetY);
+        drawArrow(ctx,sx,sy,flightAngle,amp,sMu,sp.color);
+        drawImpactParticles(zoomTargetX, zoomTargetY, sFrame - zoomStartFrame);
+        ctx.restore();
+      }
+    }
+
+    if(!zoomActive && !flying) {
+      drawArrow(ctx,sx,sy,flightAngle,0,sMu,sp.color);
+      const grd=ctx.createRadialGradient(sx,sy,0,sx,sy,60);
+      grd.addColorStop(0,themeVal('rgba(77,168,218,0.28)','rgba(255,220,80,0.35)')); grd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath(); ctx.arc(sx,sy,60,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
+    } else if (flying) {
+      drawArrow(ctx,sx,sy,flightAngle,amp,sMu,sp.color);
+    }
+    
+    if(flying || zoomActive) rafId=requestAnimationFrame(frame);
+  }
+  rafId=requestAnimationFrame(frame);
+}
+
+// ══════════════════════════════════════════════
+// UPDATE ALL & EVENT LISTENERS
+// ══════════════════════════════════════════════
+function updateAll(){
+  refreshSpineCards(); buildValidityGrid();
+  updatePhysicsStrip(); updateTuneIndicator(); 
+  drawCamIdle();
+  if(!flying && !zoomActive) drawReady();
+}
+
+[['slLen','vLen',v=>v+' cm'],['slBow','vBow',v=>v+' N'],['slMu','vMu',v=>parseFloat(v).toFixed(2)],
+ ['slAngle','vAngle',v=>v+'°'],['slDist','vDist',v=>v+' m'],['slDrag','vDrag',v=>parseFloat(v).toFixed(3)]]
+.forEach(([id,vid,fmt])=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    document.getElementById(vid).textContent=fmt(e.target.value); updateAll();
+  });
+});
+
+document.getElementById('btnRandDrag').addEventListener('click', () => {
+  const randDrag = (Math.random() * (0.15 - 0.005) + 0.005).toFixed(3);
+  document.getElementById('slDrag').value = randDrag;
+  document.getElementById('vDrag').textContent = randDrag;
+  updateAll();
+});
+
+document.getElementById('shootBtn').addEventListener('click',shoot);
+
+buildSpineCards(); drawCamIdle(); updateAll();
+</script>
+</body>
+</html>
